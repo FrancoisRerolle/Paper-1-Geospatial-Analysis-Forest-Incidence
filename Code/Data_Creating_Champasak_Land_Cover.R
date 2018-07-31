@@ -57,7 +57,6 @@ setwd("/Volumes/FREROLLE/UCSF MEI/PhD/Laos/LandcoverPredicted/Champasak") # Dire
 extent(Champasak) # Champasak province is fully covered by portion 8, 9, 11 and 12 of the landsat layers Alameyhu gave me for the whole Lao
 
 years <- c(2008, 2009, 2010, 2012, 2013, 2014, 2015, 2016) # 2011 is missing because only 500*500m resolution landsat data
-years <- c(2013, 2014, 2015) # 2011 is missing because only 500*500m resolution landsat data
 
 for (i in 1:length(years)){
   # Load landsat data
