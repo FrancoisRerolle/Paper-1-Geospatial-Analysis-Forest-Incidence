@@ -4,7 +4,7 @@
 rm(list=ls())
 
 #Set working directory
-setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper 1 Geospatial analysis Forest_Incidence/Data/Cleaned")
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Data/Cleaned")
 
 #Load packages
 library(tidyverse)
@@ -36,7 +36,7 @@ sum(is.na(A3_South_GPS$Longitude))/nrow(A3_South_GPS) # 11%
 ########
 # Save # 
 ########
-setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper 1 Geospatial analysis Forest_Incidence/Data/Merged")
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Data/Merged")
 write.csv(A3_South_GPS, file = "A3_South_GPS.csv", row.names = F) # Save an excel file for easy visualization
 save(file="A3_South_GPS.RData", A3_South_GPS) # Save an Rdata file to conserve data cleaning/management features
 
@@ -53,5 +53,5 @@ Table_Villages_Missing_Coordinates  <- (A3_South_GPS
                                         %>% filter(Frequency >= 50)
                                         )
 
-setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper 1 Geospatial analysis Forest_Incidence/Data/Cleaned/Village Key A3 - GPS")
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Data/Cleaned/Village Key A3 - GPS")
 write.csv(Table_Villages_Missing_Coordinates, file = "Table_Villages_Missing_Coordinates.csv", row.names = F) # Save an excel file for easy visualization
