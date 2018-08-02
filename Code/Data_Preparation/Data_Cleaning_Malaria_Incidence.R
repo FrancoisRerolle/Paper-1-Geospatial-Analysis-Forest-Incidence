@@ -4,7 +4,7 @@
 rm(list=ls())
 
 #Set working directory
-setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper 1 Geospatial analysis Forest_Incidence/Data/Raw/Malaria Incidence")
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Data/Raw/Malaria Incidence")
 
 #Load packages
 library(tidyverse)
@@ -17,7 +17,7 @@ A3_South_Raw <- read_csv("Malaria South  23.5.2017.csv")
 Codebook_A3_south <- read_csv("Malaria South Codebook sheet 2.csv")
 
 # Source functions for data cleaning
-source("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper 1 Geospatial analysis Forest_Incidence/Code/Data_Cleaning_Functions.R")
+source("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Code/Data_Cleaning_Functions.R")
 
 
 ####################
@@ -433,7 +433,7 @@ A3_South <- (A3_South_Full
 ########
 # Save # 
 ########
-setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper 1 Geospatial analysis Forest_Incidence/Data/Cleaned/Malaria Incidence")
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Data/Cleaned/Malaria Incidence")
 write.csv(A3_South, file = "A3_South.csv", row.names = F) # Save an excel file for easy visualization
 save(file="A3_South.RData", A3_South) # Save an Rdata file to conserve data cleaning/management features
 

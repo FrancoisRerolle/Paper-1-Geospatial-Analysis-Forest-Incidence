@@ -1,0 +1,131 @@
+\documentclass{article}
+\title{Descriptive Analyses} 
+\author{Francois Rerolle}
+\date{\today}
+
+%List if latex packages you'll need
+\usepackage{float}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\graphicspath{{/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Analyses/figure/}}
+
+%set the margins of the document
+\usepackage[]{geometry}
+
+%End the preamble and begin the document
+\begin{document}
+\maketitle
+ 
+<<include=FALSE>>=
+# Preliminaries in R
+# Clear the R environment of variables, set the working directory, and then load necessary R packages
+rm(list=ls())
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence")
+
+source("Code/Data_Analyses/Descriptive_Statistics.R")
+@
+\noindent \textit{Report of some descriptive statistics on the final cleaned dataset (A3 + environmental covariates).}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Start by a description of the dataset %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Description of dataset}
+\subsection{What, where and when}
+In 2017, we collected all A3 forms available in 4 districts of the southern province of Champasak in Laos: Moonlapamok, Pathoomphone, Sanasomboon and Sukhuma. A3 forms record all suspected malaria cases passively detected that got tested for malaria by RDT and/or microscopy.\\
+
+\noindent A total of \(\Sexpr{nrow(A3_South)}\) A3 forms were collected. Individuals reported coming from \(\Sexpr{length(unique(A3_South$Village))}\) villages (\(\Sexpr{round(100*sum(is.na(A3_South$Village))/nrow(A3_South),digits = 1)}\) $\%$ missing) in \(\Sexpr{length(unique(A3_South$District))}\) districts (\(\Sexpr{round(100*sum(is.na(A3_South$District))/nrow(A3_South),digits = 1)}\) $\%$ missing). Most individuals lived in districts where A3 form was collected but some lived in other districts:\\
+
+<<echo=FALSE, cache=TRUE>>=
+table(A3_South$District, useNA = "always")
+@
+
+\noindent Figure \ref{fig:Histogram_Date} shows a time distribution of A3 forms ranging from \(\Sexpr{min(A3_South$Date, na.rm = T)}\) to \(\Sexpr{max(A3_South$Date, na.rm = T)}\), pretty constant over a 3 year period from October 2013 to October 2016. Figure \ref{fig:Histogram_Date_District} shows that this true across the 4 districts of data collection.
+
+\begin{figure}
+\begin{center}
+<<label=fig1, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+histDataOverTime <- (A3_South
+                     %>% filter(!is.na(Date)) # Remove NA in Date, messes up echo chunk option to insert figure
+                     %>% ggplot(aes(x=Date)) + geom_histogram(binwidth = 1)
+                     )
+ggarrange(histDataOverTime)
+@
+\includegraphics[width=0.5\textwidth]{fig1-1}
+\end{center}
+\caption{Histogram of A3 data collection times.}
+\label{fig:Histogram_Date}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+<<label=fig2, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+histDataOverTimeDistrict <- (A3_South
+                             %>% filter(!is.na(Date)) # Remove NA in Date, messes up echo chunk option to insert figure
+                             %>% filter(District %in% c("Moonlapamok", "Pathoomphone", "Sanasomboon", "Sukhuma"))
+                             %>% ggplot(aes(x=Date)) + geom_histogram(binwidth = 1) + facet_wrap(~District, ncol = 2)
+                             )
+ggarrange(histDataOverTimeDistrict)
+@
+\includegraphics[width=0.5\textwidth]{fig2-1}
+\end{center}
+\caption{Histogram of A3 data collection times per district.}
+\label{fig:Histogram_Date_District}
+\end{figure}
+
+\subsection{Description of variables}
+There are two types of variables available in this dataset:
+\begin{itemize}
+\item Variables that were collected in the A3 form: date, district, village, age, gender, occupation, RDT result, microscopy result and treatment taken.
+\item Environmental covariates that were extracted from raster layers via GPS coordinates of villages (matched via offical list of villages in Champasak): altitude, temperature, precipitation, population, percent High-Biomass Vegetation (HBV) in 1km and percent High-Biomass Vegetation (HBV) in 10km.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Descriptive Statistics %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Descriptive statistics}
+\subsection{Basic description}
+
+
+\begin{table}[htp]
+\begin{center}
+\begin{tabular}{lp{11cm}c}
+Variable & Description & Missing \\ \hline
+&& \\
+Date & Date of the A3 interview, over 3 years from October 2013 to 2016 & \(\Sexpr{round(100*sum(is.na(A3_South$Date))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+District & Reported district where living. \(\Sexpr{length(unique(A3_South$District))}\) different districts of Champasak Province. \(\Sexpr{round(100*nrow(A3_South_MPSS)/sum(!is.na(A3_South$District)), digits = 1)}\) $\%$ come from the 4 districts where A3 forms where collected: MP, PT, SB and SK & \(\Sexpr{round(100*sum(is.na(A3_South$District))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+Village & Reported village where living. \(\Sexpr{length(unique(A3_South$Village))}\) different villages of Champasak Province, \(\Sexpr{length(unique(A3_South_MPSS$Village))}\) in MP, PT, SB or SK & \(\Sexpr{round(100*sum(is.na(A3_South$Village))/nrow(A3_South),digits = 1)}\) $\%$ \\ 
+&& \\
+Age & Reported age. Ranges from \(\Sexpr{min(A3_South$Age, na.rm = T)}\) to \(\Sexpr{max(A3_South$Age, na.rm = T)}\), with a mean of \(\Sexpr{round(mean(A3_South$Age, na.rm = T), digits = 1)}\) and a median of \(\Sexpr{median(A3_South$Age, na.rm = T)}\) years & \(\Sexpr{round(100*sum(is.na(A3_South$age))/nrow(A3_South),digits = 1)}\) $\%$ \\ 
+&& \\
+Is.Male & Reported gender. \(\Sexpr{round(100*sum(A3_South$Is_Male == "Yes", na.rm=T)/sum(!is.na(A3_South$Is_Male)), digits = 1)}\) $\%$ of males. & \(\Sexpr{round(100*sum(is.na(A3_South$Is_Male))/nrow(A3_South),digits = 1)}\) $\%$ \\ 
+&& \\
+Occupation & Reported occupation. \(\Sexpr{length(unique(A3_South$Occupation))}\) different occupations. \(\Sexpr{round(100*sum(A3_South$Occupation == "famer", na.rm=T)/sum(!is.na(A3_South$Occupation)), digits = 1)}\) $\%$ are farmers & \(\Sexpr{round(100*sum(is.na(A3_South$Occupation))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\ \hline
+&& \\
+RDT & RDT results. \(\Sexpr{round(100*sum(A3_South$RDT_result == "Pf", na.rm=T)/sum(!is.na(A3_South$RDT_result)), digits = 1)}\) $\%$ Pf, \(\Sexpr{round(100*sum(A3_South$RDT_result == "Pv", na.rm=T)/sum(!is.na(A3_South$RDT_result)), digits = 1)}\) $\%$ Pv and \(\Sexpr{round(100*sum(A3_South$RDT_result == "Pf, Pv", na.rm=T)/sum(!is.na(A3_South$RDT_result)), digits = 1)}\) $\%$ mix & \(\Sexpr{round(100*sum(is.na(A3_South$RDT_result))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\
+Microscopy & Microscopy results. \(\Sexpr{round(100*sum(A3_South$Microscopy_result == "Pf", na.rm=T)/sum(!is.na(A3_South$Microscopy_result)), digits = 1)}\) $\%$ Pf, \(\Sexpr{round(100*sum(A3_South$Microscopy_result == "Pv", na.rm=T)/sum(!is.na(A3_South$Microscopy_result)), digits = 1)}\) $\%$ Pv and \(\Sexpr{round(100*sum(A3_South$Microscopy_result == "Pf, Pv", na.rm=T)/sum(!is.na(A3_South$Microscopy_result)), digits = 1)}\) $\%$ mix & \(\Sexpr{round(100*sum(is.na(A3_South$Microscopy_result))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\
+Treatment & Treatment provided after malaria test. \(\Sexpr{length(unique(A3_South$Treatment))}\) different treatment combinations. \(\Sexpr{round(100*sum(A3_South$Treatment == "None", na.rm=T)/sum(!is.na(A3_South$Treatment)), digits = 1)}\) $\%$ received no treatment and \(\Sexpr{round(100*sum(A3_South$Treatment == "Coartem", na.rm=T)/sum(!is.na(A3_South$Treatment)), digits = 1)}\) $\%$ received Coartem alone & \(\Sexpr{round(100*sum(is.na(A3_South$Treatment))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\ \hline
+&& \\
+GPS & GPS coordinates of villages matched with official list of villages in Champasak with GPS. Environmental covariates were extracted for all villages with GPS coordinates. & \(\Sexpr{round(100*sum(is.na(A3_South$Longitude) | is.na(A3_South$Latitude))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\ \hline
+
+\end{tabular}
+\caption{Ballpark parameter estimates for the Ross-Macdonald model.}
+\label{table:tableTransmissionModel}
+\end{center}
+\end{table}
+
+Environmental covariates that were extracted from raster layers via GPS coordinates of villages (matched via offical list of villages in Champasak): altitude, temperature, precipitation, population, percent High-Biomass Vegetation (HBV) in 1km and percent High-Biomass Vegetation (HBV) in 10km.
+
+<<echo=FALSE>>=
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Analyses")
+@
+
+\end{document}
