@@ -25,7 +25,7 @@ A3_South_GPS <- (A3_South
                  %>% mutate(District_GPS = ifelse(is.na(District_GPS), yes = District_of_input, no = District_GPS), # If no modification needed to match with the GPS dataset, use A3 district
                             Village_GPS = ifelse(is.na(Village_GPS), yes = Village, no = Village_GPS)) # If no modification needed to match with the GPS dataset, use A3 Village
                  %>% left_join(Champasak_Villages_Coordinates, by = c("District_GPS" = "District", "Village_GPS" = "Village")) # Merged by district and village to include in the data set GPS coordinates
-                 %>% select(-Village, -District_of_input) # Remove undesirable variables
+                 %>% dplyr::select(-Village, -District_of_input) # Remove undesirable variables
                  %>% rename(District = District_GPS,
                             Village = Village_GPS)
                  )
@@ -49,7 +49,7 @@ Table_Villages_Missing_Coordinates  <- (A3_South_GPS
                                         %>% count() #counts the number of obervations defined by group_by
                                         %>% arrange(desc(n))
                                         %>% rename(Frequency = n)
-                                        %>% select(District, Village, Frequency)
+                                        %>% dplyr::select(District, Village, Frequency)
                                         %>% filter(Frequency >= 50)
                                         )
 

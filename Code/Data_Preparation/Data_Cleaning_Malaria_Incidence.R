@@ -17,7 +17,7 @@ A3_South_Raw <- read_csv("Malaria South  23.5.2017.csv")
 Codebook_A3_south <- read_csv("Malaria South Codebook sheet 2.csv")
 
 # Source functions for data cleaning
-source("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Code/Data_Cleaning_Functions.R")
+source("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Code/Data_Preparation/Data_Cleaning_Functions.R")
 
 
 ####################
@@ -136,46 +136,46 @@ Level_key_District <- Level_key_function(Codebook_A3_south, slice.start = 586, s
 # Explore patterns of data to inform subsequent data cleaning
 Table_Infection_results <- (A3_South_Labelled
                             %>% mutate(Q14_5 = as.integer(Q14_5))
-                            %>% select(
+                            %>% dplyr::select(
                               Pf_positive_RDT,
-                                       Pv_positive_RDT,
-                                       Mix_positive_RDT,
-                                       Negative_RDT,
-                                       # Negative_microscopy,
-                                       # Positive_microscopy,
-                                       # Pf_positive_microscopy,
-                                       # Pv_positive_microscopy,
-                                       # Mix_positive_microscopy,
-                                       # Pm_positive_microscopy,
-                                       # Po_positive_microscopy,
-                                       Positive_RDT_and_microscopy,
-                                       Negative_RDT_and_microscopy,
-                                       Pf_positive_RDT_and_microscopy,
-                                       Pv_positive_RDT_and_microscopy,
-                                       Mix_positive_RDT_and_microscopy,
-                                       Pm_positive_RDT_and_microscopy,
-                                       Po_positive_RDT_and_microscopy
-                                       )
+                              Pv_positive_RDT,
+                              Mix_positive_RDT,
+                              Negative_RDT,
+                              # Negative_microscopy,
+                              # Positive_microscopy,
+                              # Pf_positive_microscopy,
+                              # Pv_positive_microscopy,
+                              # Mix_positive_microscopy,
+                              # Pm_positive_microscopy,
+                              # Po_positive_microscopy,
+                              Positive_RDT_and_microscopy,
+                              Negative_RDT_and_microscopy,
+                              Pf_positive_RDT_and_microscopy,
+                              Pv_positive_RDT_and_microscopy,
+                              Mix_positive_RDT_and_microscopy,
+                              Pm_positive_RDT_and_microscopy,
+                              Po_positive_RDT_and_microscopy
+                              )
                             %>% group_by(
                               Pf_positive_RDT,
-                                         Pv_positive_RDT,
-                                         Mix_positive_RDT,
-                                         Negative_RDT,
-                                         # Negative_microscopy,
-                                         # Positive_microscopy,
-                                         # Pf_positive_microscopy,
-                                         # Pv_positive_microscopy,
-                                         # Mix_positive_microscopy,
-                                         # Pm_positive_microscopy,
-                                         # Po_positive_microscopy,
-                                         Positive_RDT_and_microscopy,
-                                         Negative_RDT_and_microscopy,
-                                         Pf_positive_RDT_and_microscopy,
-                                         Pv_positive_RDT_and_microscopy,
-                                         Mix_positive_RDT_and_microscopy,
-                                         Pm_positive_RDT_and_microscopy,
-                                         Po_positive_RDT_and_microscopy
-                                         )
+                              Pv_positive_RDT,
+                              Mix_positive_RDT,
+                              Negative_RDT,
+                              # Negative_microscopy,
+                              # Positive_microscopy,
+                              # Pf_positive_microscopy,
+                              # Pv_positive_microscopy,
+                              # Mix_positive_microscopy,
+                              # Pm_positive_microscopy,
+                              # Po_positive_microscopy,
+                              Positive_RDT_and_microscopy,
+                              Negative_RDT_and_microscopy,
+                              Pf_positive_RDT_and_microscopy,
+                              Pv_positive_RDT_and_microscopy,
+                              Mix_positive_RDT_and_microscopy,
+                              Pm_positive_RDT_and_microscopy,
+                              Po_positive_RDT_and_microscopy
+                              )
                             %>% count() #counts the number of obervations defined by group_by
                             %>% arrange(desc(n))
                             %>% rename(Frequency = n)
@@ -184,7 +184,7 @@ Table_Infection_results <- (A3_South_Labelled
 #View(Table_Infection_results)
 
 Table_Treatment_results <- (A3_South_Labelled
-                            %>% select(
+                            %>% dplyr::select(
                               Confirmed_not_serious_case_treated_Coartem_for_Pf,
                               Confirmed_not_serious_case_treated_Coartem_for_Pv,
                               Confirmed_not_serious_case_treated_Coartem_for_Mix,
@@ -254,7 +254,18 @@ A3_South_Cleaned <- (A3_South_Labelled
                                 Male = replace(Male, Male == 99, NA), #Set Male = 99 as NA
                                 Female = replace(Female, Female == 99, NA), #Set Female = 99 as NA
                                 Occupation = replace(Occupation, Occupation == 99 | Occupation == 238, NA), #Set Occupation to NA if 99 ("blank") or 238 ("Cannot read/ Don't know meaning")
-                                Occupation = as.factor(recode(Occupation, !!!Level_key_Occupation)), # Set Occupation as factor and recode factor levels
+                                Occupation = recode(Occupation, !!!Level_key_Occupation), # Set Occupation as factor and recode factor levels
+                                Occupation = replace(Occupation, Occupation == "famer", "Farmer"), #Correct famer to Farmer
+                                Occupation = replace(Occupation, Occupation == "Aricuture work/pantation", "Farmer"), #Pool Ariculture work/pantation with Farmer
+                                Occupation = replace(Occupation, Occupation == "child", "Child"), #Correct child to Child
+                                Occupation = replace(Occupation, Occupation == "employee", "Employee"), #Correct employee to Employee
+                                Occupation = replace(Occupation, Occupation == "merchant", "Merchant"), #Correct merchant to Merchant
+                                Occupation = replace(Occupation, Occupation == "student", "Student"), #Correct student to Student
+                                Occupation = replace(Occupation, Occupation == "unemploy", "Unemployed"), #Correct unemploy to Unemployed
+                                Occupation = replace(Occupation, Occupation == "head of household" | Occupation == "house wife" | Occupation == "old adult" | Occupation == "retired", "Unemployed"), #Pool "head of household", "house wife", with Farmer
+                                Occupation = replace(Occupation, Occupation == "charcoal produce" | Occupation == "dancer" | Occupation == "disabled people" | Occupation == "driver" | Occupation == "monk" | Occupation == "labor" | Occupation == "P/H" | Occupation == "village head/village authority" | Occupation == "village volunteer", "Other"), #Pool "charcoal produce" (n=1), "dancer" (n=3), "disabled people" (n=4), "driver" (n=20), "monk" (n=147), "labor" (n=189), "P/H" (n=2), "village head/village authority" (n=13), "village volunteer" (n=3), in Other
+                                Occupation = replace(Occupation, Occupation == "no meaning" | Occupation == "no study", NA), #Set Occupation to NA if "no meaning" or "no study"
+                                Occupation = as.factor(Occupation),
                                 Village = replace(Village, Village == 999 | Village == 238, NA), #Set Village to NA if 999 ("blank") or 238 ("Cannot read/ Don't know meaning")
                                 Village = recode(Village, !!!Level_key_Village), # Set Village as factor and recode factor levels # Caution: village number that do not appear in codebook are coded as NA
                                 Village = gsub(pattern="Ban ", replacement ="", x = Village), # Format village name so that we can match with Village name with GPS
@@ -332,16 +343,16 @@ A3_South_Cleaned <- (A3_South_Labelled
 #####################
 # Create the RDT_result variable to be merged with data
 RDT_result <- (A3_South_Cleaned
-               %>% select(Pf_positive_RDT,
-                          Pv_positive_RDT,
-                          Negative_RDT)
+               %>% dplyr::select(Pf_positive_RDT,
+                                 Pv_positive_RDT,
+                                 Negative_RDT)
                %>% rename(Pf = Pf_positive_RDT,
                           Pv = Pv_positive_RDT,
                           Negative = Negative_RDT)
                %>% mutate(Observation_number = row_number()) # Create ID variable for matching
                %>% melt(id.var = 'Observation_number', variable.name = 'RDT_result') # Reshape from wide to long: for every observation number, we have as many rows as there are variables in the table in addition to ID.var (3 here: Pf, Pv, Negative) and the column "value" contains the value of the variable
                %>% filter(value == 1) # Keep RDT results that are informative: If there is one 1, indicates we know (conflict resolved earlier in A3_South_cleaned). If only 0 or NA, indicates we don't know RDT result for that observation
-               %>% select(Observation_number, RDT_result)
+               %>% dplyr::select(Observation_number, RDT_result)
                %>% group_by(Observation_number)
                %>% mutate(RDT_result = paste0(RDT_result, collapse = ", ")) # Gather RDT result if several per observation. E.g: paste Pf and Pv into Pf, PV
                %>% distinct()
@@ -349,11 +360,11 @@ RDT_result <- (A3_South_Cleaned
 
 # Create the Microscopy_result variable to be merged with data
 Microscopy_result <- (A3_South_Cleaned
-                      %>% select(Pf_positive_microscopy,
-                                 Pv_positive_microscopy,
-                                 Pm_positive_microscopy,
-                                 Po_positive_microscopy,
-                                 Negative_microscopy)
+                      %>% dplyr::select(Pf_positive_microscopy,
+                                        Pv_positive_microscopy,
+                                        Pm_positive_microscopy,
+                                        Po_positive_microscopy,
+                                        Negative_microscopy)
                       %>% rename(Pf = Pf_positive_microscopy,
                                  Pv = Pv_positive_microscopy,
                                  Pm = Pm_positive_microscopy,
@@ -362,7 +373,7 @@ Microscopy_result <- (A3_South_Cleaned
                       %>% mutate(Observation_number = row_number())
                       %>% melt(id.var = 'Observation_number', variable.name = 'Microscopy_result')
                       %>% filter(value == 1)
-                      %>% select(Observation_number, Microscopy_result)
+                      %>% dplyr::select(Observation_number, Microscopy_result)
                       %>% group_by(Observation_number)
                       %>% mutate(Microscopy_result = paste0(Microscopy_result, collapse = ", "))
                       %>% distinct()
@@ -371,12 +382,12 @@ Microscopy_result <- (A3_South_Cleaned
 
 # Create the Treatment_result variable to be merged with data
 Treatment_result <- (A3_South_Cleaned
-                     %>% select(Received_Coartem_Treatment,
-                                Received_Artesunate_Treatment,
-                                Received_Primaquine_Treatment,
-                                Received_Quinine_Treatment,
-                                Received_Other_Treatment,
-                                Received_No_Treatment)
+                     %>% dplyr::select(Received_Coartem_Treatment,
+                                       Received_Artesunate_Treatment,
+                                       Received_Primaquine_Treatment,
+                                       Received_Quinine_Treatment,
+                                       Received_Other_Treatment,
+                                       Received_No_Treatment)
                      %>% rename(Coartem = Received_Coartem_Treatment,
                                 Artesunate = Received_Artesunate_Treatment,
                                 Primaquine = Received_Primaquine_Treatment,
@@ -386,7 +397,7 @@ Treatment_result <- (A3_South_Cleaned
                      %>% mutate(Observation_number = row_number())
                      %>% melt(id.var = 'Observation_number', variable.name = 'Treatment')
                      %>% filter(value == 1)
-                     %>% select(Observation_number, Treatment)
+                     %>% dplyr::select(Observation_number, Treatment)
                      %>% group_by(Observation_number)
                      %>% mutate(Treatment = paste0(Treatment, collapse = ", "))
                      %>% distinct()
@@ -406,7 +417,11 @@ A3_South_Full <- (A3_South_Merged
                              Is_Male = ifelse(Male == 1 & Female == 1, yes = NA, no = Male), # If male and female = 1, set to NA
                              Pregnant = replace(Pregnant, Pregnant == 1 & Is_Male == 1, NA), # Set pregant male to NA for pregancy
                              Is_Male = replace(Is_Male, is.na(Is_Male) & Pregnant == 1, 0), # Set gender to female is unknown gender but pregnant
-                             Is_Male = as.factor(recode(Is_Male, '1' = "Yes", '0' = "No")) # Set Is_Male as factor and recode factor levels
+                             Is_Male = as.factor(recode(Is_Male, '1' = "Yes", '0' = "No")), # Set Is_Male as factor and recode factor levels
+                             Treatment = replace(Treatment, Treatment == "Coartem", "Coartem alone"), #Pool "Artesunate" (n=35), "Primaquine" (n=28), "Quinine" (n=11) in Other
+                             Treatment = replace(Treatment, Treatment == "Artesunate" | Treatment == "Primaquine" | Treatment == "Quinine" , "Other"), #Pool "Artesunate" (n=35), "Primaquine" (n=28), "Quinine" (n=11) in Other
+                             Treatment = replace(Treatment, Treatment == "Coartem, Artesunate" | Treatment == "Coartem, Artesunate, Other" | Treatment == "Coartem, Artesunate, Primaquine" | Treatment == "Coartem, Primaquine" | Treatment == "Coartem, Primaquine, Other" | Treatment == "Coartem, Quinine, Other" | Treatment == "Coartem, Other" , "Coartem and other"), #Pool " Coartem, Artesunate" (n=10), " Coartem, Artesunate, Other" (n=4), " Coartem, Artesunate, Primaquine" (n=1),  Coartem, Primaquine" (n=67), "Coartem, Primaquine, Other" (n=4), "Coartem, Quinine, Other" (n=4), "Coartem, Other" (n=90), in "Coartem and other"
+                             Treatment = as.factor(Treatment)
                              )
                   )
 
@@ -417,16 +432,16 @@ A3_South_Full <- (A3_South_Merged
 # Restriction to interesting variables #
 ########################################
 A3_South <- (A3_South_Full
-             %>% select(Date,
-                        Age,
-                        Is_Male,
-                        Occupation,
-                        District_of_input, # Matching Key uses District_of_input instead of District because District is 80% missing
-                        Village,
-                        RDT_result,
-                        Microscopy_result,
-                        Treatment
-                        )
+             %>% dplyr::select(Date,
+                               Age,
+                               Is_Male,
+                               Occupation,
+                               District_of_input, # Matching Key uses District_of_input instead of District because District is 80% missing
+                               Village,
+                               RDT_result,
+                               Microscopy_result,
+                               Treatment
+                               )
              )
 
 
