@@ -1,0 +1,752 @@
+\documentclass{article}
+\title{Descriptive Analyses} 
+\author{Francois Rerolle}
+\date{\today}
+
+%List if latex packages you'll need
+\usepackage{float}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\graphicspath{{/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Analyses/Descriptive_Analyses/figure/}}
+
+%set the margins of the document
+\usepackage[]{geometry}
+
+%End the preamble and begin the document
+\begin{document}
+\maketitle
+ 
+<<include=FALSE>>=
+# Preliminaries in R
+# Clear the R environment of variables, set the working directory, and then load necessary R packages
+rm(list=ls())
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence")
+
+source("Code/Data_Analyses/Descriptive_Statistics.R")
+
+setwd("/Users/francoisrerolle/Desktop/UCSF/Dissertation/Paper-1-Geospatial-Analysis-Forest-Incidence/Analyses/Descriptive_Analyses")
+@
+\noindent \textit{Report of some descriptive statistics on the final cleaned dataset (A3 + environmental covariates).}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Start by a description of the dataset %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Description of dataset}
+\subsection{What, where and when}
+In 2017, we collected all A3 forms available in 4 districts of the southern province of Champasak in Laos: Moonlapamok, Pathoomphone, Sanasomboon and Sukhuma. A3 forms record all suspected malaria cases passively detected that got tested for malaria by RDT and/or microscopy.\\
+
+\noindent A total of \(\Sexpr{nrow(A3_South)}\) A3 forms were collected. Individuals reported coming from \(\Sexpr{length(unique(A3_South$Village))}\) villages (\(\Sexpr{round(100*sum(is.na(A3_South$Village))/nrow(A3_South),digits = 1)}\) $\%$ missing) in \(\Sexpr{length(unique(A3_South$District))}\) districts (\(\Sexpr{round(100*sum(is.na(A3_South$District))/nrow(A3_South),digits = 1)}\) $\%$ missing). Most individuals lived in districts where A3 form was collected but some lived in other districts:\\
+
+<<echo=FALSE, cache=T>>=
+table(A3_South$District, useNA = "always")
+@
+
+\noindent Figure \ref{fig:Histogram_Date} shows a time distribution of A3 forms ranging from \(\Sexpr{min(A3_South$Date, na.rm = T)}\) to \(\Sexpr{max(A3_South$Date, na.rm = T)}\), pretty constant over a 3 year period from October 2013 to October 2016. Figure \ref{fig:Histogram_Date_District} shows that this true across the 4 districts of data collection.
+
+\begin{figure}
+\begin{center}
+<<label=fig1, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+histDataOverTime <- (A3_South
+                     %>% filter(!is.na(Date)) # Remove NA in Date, messes up echo chunk option to insert figure
+                     %>% ggplot(aes(x=Date)) + geom_histogram(binwidth = 1) 
+                     + scale_x_date(name = "Time")
+                     + scale_y_continuous(name = "Count")
+                     + theme(axis.text = element_text(size = 14),
+                             axis.title = element_text(size = 16))
+                     )
+ggarrange(histDataOverTime)
+@
+\includegraphics[width=0.5\textwidth]{fig1-1}
+\end{center}
+\caption{Histogram of A3 data collection times.}
+\label{fig:Histogram_Date}
+\end{figure}
+
+\begin{figure}
+\begin{center}
+<<label=fig2, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+histDataOverTimeDistrict <- (A3_South
+                             %>% filter(!is.na(Date)) # Remove NA in Date, messes up echo chunk option to insert figure
+                             %>% filter(District %in% c("Moonlapamok", "Pathoomphone", "Sanasomboon", "Sukhuma"))
+                             %>% ggplot(aes(x=Date)) + geom_histogram(binwidth = 1) + facet_wrap(~District, ncol = 2)
+                             + scale_x_date(name = "Time")
+                             + scale_y_continuous(name = "Count")
+                             + theme(axis.text = element_text(size = 14),
+                                     axis.title = element_text(size = 16))
+                             )
+ggarrange(histDataOverTimeDistrict)
+@
+\includegraphics[width=0.5\textwidth]{fig2-1}
+\end{center}
+\caption{Histogram of A3 data collection times per district.}
+\label{fig:Histogram_Date_District}
+\end{figure}
+
+\subsection{Description of variables}
+There are two types of variables available in this dataset:
+\begin{itemize}
+\item Variables that were collected in the A3 form: date, district, village, age, gender, occupation, RDT result, microscopy result and treatment taken.
+\item Environmental covariates that were extracted from raster layers via GPS coordinates of villages (matched via offical list of villages in Champasak): altitude, temperature, precipitation, population, forest percent in 1km and 10km for the data collection and previous 5 years.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Descriptive Statistics %
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Descriptive statistics}
+\subsection{Basic description}
+\subsubsection{A3 variables} 
+
+% Table for A3 variables
+
+\begin{table}[htp]
+\begin{center}
+\begin{tabular}{lp{10.5cm}c}
+Variable & Description & Missing \\ \hline
+&& \\
+Date & Date of the A3 interview, over 3 years from October 2013 to 2016. & \(\Sexpr{round(100*sum(is.na(A3_South$Date))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+District & Reported district where living. \(\Sexpr{length(levels(A3_South$District))}\) different districts of Champasak Province. \(\Sexpr{round(100*nrow(A3_South_MPSS)/sum(!is.na(A3_South$District)), digits = 1)}\) $\%$ come from the 4 districts where A3 forms where collected: MP, PT, SB and SK. & \(\Sexpr{round(100*sum(is.na(A3_South$District))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+Village & Reported village where living. \(\Sexpr{length(levels(A3_South$Village))}\) different villages of Champasak Province, \(\Sexpr{length(levels(A3_South_MPSS$Village))}\) in MP, PT, SB or SK. & \(\Sexpr{round(100*sum(is.na(A3_South$Village))/nrow(A3_South),digits = 1)}\) $\%$ \\ 
+&& \\
+Age & Reported age. Ranges from \(\Sexpr{min(A3_South$Age, na.rm = T)}\) to \(\Sexpr{max(A3_South$Age, na.rm = T)}\), with a median of \(\Sexpr{median(A3_South$Age, na.rm = T)}\) years. & \(\Sexpr{round(100*sum(is.na(A3_South$Age))/nrow(A3_South),digits = 1)}\) $\%$ \\ 
+&& \\
+Male & Reported gender. \(\Sexpr{round(100*sum(A3_South$Is_Male == "Yes", na.rm=T)/sum(!is.na(A3_South$Is_Male)), digits = 1)}\) $\%$ of males. & \(\Sexpr{round(100*sum(is.na(A3_South$Is_Male))/nrow(A3_South),digits = 1)}\) $\%$ \\ 
+&& \\
+Occupation & Reported occupation. \(\Sexpr{length(levels(A3_South$Occupation))}\) different occupations. \(\Sexpr{round(100*sum(A3_South$Occupation == "Farmer", na.rm=T)/sum(!is.na(A3_South$Occupation)), digits = 1)}\) $\%$ are farmers. & \(\Sexpr{round(100*sum(is.na(A3_South$Occupation))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\ \hline
+&& \\
+RDT & RDT results. \(\Sexpr{round(100*sum(A3_South$RDT_result == "Pf", na.rm=T)/sum(!is.na(A3_South$RDT_result)), digits = 1)}\) $\%$ Pf, \(\Sexpr{round(100*sum(A3_South$RDT_result == "Pv", na.rm=T)/sum(!is.na(A3_South$RDT_result)), digits = 1)}\) $\%$ Pv and \(\Sexpr{round(100*sum(A3_South$RDT_result == "Pf, Pv", na.rm=T)/sum(!is.na(A3_South$RDT_result)), digits = 1)}\) $\%$ mix. & \(\Sexpr{round(100*sum(is.na(A3_South$RDT_result))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\
+Microscopy & Microscopy results. \(\Sexpr{round(100*sum(A3_South$Microscopy_result == "Pf", na.rm=T)/sum(!is.na(A3_South$Microscopy_result)), digits = 1)}\) $\%$ Pf, \(\Sexpr{round(100*sum(A3_South$Microscopy_result == "Pv", na.rm=T)/sum(!is.na(A3_South$Microscopy_result)), digits = 1)}\) $\%$ Pv and \(\Sexpr{round(100*sum(A3_South$Microscopy_result == "Pf, Pv", na.rm=T)/sum(!is.na(A3_South$Microscopy_result)), digits = 1)}\) $\%$ mix. & \(\Sexpr{round(100*sum(is.na(A3_South$Microscopy_result))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\
+Treatment & Treatment provided to A3 individuals. \(\Sexpr{length(levels(A3_South$Treatment))}\) different treatment combinations. \(\Sexpr{round(100*sum(A3_South$Treatment == "None", na.rm=T)/sum(!is.na(A3_South$Treatment)), digits = 1)}\) $\%$ received no treatment and \(\Sexpr{round(100*sum(A3_South$Treatment == "Coartem alone", na.rm=T)/sum(!is.na(A3_South$Treatment)), digits = 1)}\) $\%$ received Coartem alone. & \(\Sexpr{round(100*sum(is.na(A3_South$Treatment))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\ \hline
+&& \\
+GPS & GPS coordinates of villages matched with official list of villages in Champasak with GPS. Environmental covariates were extracted for all villages with GPS coordinates. & \(\Sexpr{round(100*sum(is.na(A3_South$Longitude) | is.na(A3_South$Latitude))/nrow(A3_South), digits = 1)}\) $\%$ \\ 
+&& \\ \hline
+
+\end{tabular}
+\caption{Basic description of A3 variables in dataset.}
+\label{table:Table_Basic_Description_A3}
+\end{center}
+\end{table}
+
+\newpage
+
+\subsubsection{Environmental variables}
+
+% Table for environmental variables
+
+\begin{table}[htp]
+\begin{center}
+\begin{tabular}{lp{10.5cm}c}
+Variable & Description & Missing \\ \hline
+&& \\
+Altitude & Altitude, extracted from SRTM with resolution 1km. Ranges from  \(\Sexpr{min(A3_South$Altitude, na.rm = T)}\) to \(\Sexpr{max(A3_South$Altitude, na.rm = T)}\), with a mean of \(\Sexpr{round(mean(A3_South$Altitude, na.rm = T), digits = 0)}\) and a median of \(\Sexpr{median(A3_South$Altitude, na.rm = T)}\) meters. & \(\Sexpr{round(100*sum(is.na(A3_South$Altitude))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+Temperature & Mean annual temperature, extracted from worldclim with resolution 1km. Ranges from  \(\Sexpr{min(A3_South$Temperature_Annual_Mean, na.rm = T)}\) to \(\Sexpr{max(A3_South$Temperature_Annual_Mean, na.rm = T)}\), with a mean of \(\Sexpr{round(mean(A3_South$Temperature_Annual_Mean, na.rm = T), digits = 0)}\) and a a median of \(\Sexpr{median(A3_South$Temperature_Annual_Mean, na.rm = T)}\) $^\circ$C. We also have a measure of seasonality with the standard deviation. & \(\Sexpr{round(100*sum(is.na(A3_South$Temperature_Annual_Mean))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+Precipitation & Total annual precipitation, extracted from worldclim with resolution 1km. Ranges from  \(\Sexpr{min(A3_South$Precipitation_Annual, na.rm = T)}\) to \(\Sexpr{max(A3_South$Precipitation_Annual, na.rm = T)}\), with a mean of \(\Sexpr{round(mean(A3_South$Precipitation_Annual, na.rm = T), digits = 0)}\) and a a median of \(\Sexpr{median(A3_South$Precipitation_Annual, na.rm = T)}\) millimeters. We also have a measure of seasonality with the coefficient of variation. & \(\Sexpr{round(100*sum(is.na(A3_South$Precipitation_Annual))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+Population & Population, extracted from worldpop with resolution 100m, aggregated at 1km. Ranges from  \(\Sexpr{round(min(A3_South$Population_2015, na.rm = T), digits = 0)}\) to \(\Sexpr{round(max(A3_South$Population_2015, na.rm = T), digits = 0)}\), with a mean of \(\Sexpr{round(mean(A3_South$Population_2015, na.rm = T), digits = 0)}\) and a median of \(\Sexpr{round(median(A3_South$Population_2015, na.rm = T), digits = 0)}\) habitants in $km^{2}$. Available for 2010 and 2015. & \(\Sexpr{round(100*sum(is.na(A3_South$Population_2015))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\ \hline
+&& \\
+Forest & Percent forest within 10 km (\textit{resp.} 1 km), computed from landcover (High-Biomass Vegetation) layers produced via classification algorithm on remote landsat data. Ranges from  \(\Sexpr{round(100 * min(A3_South$Forest_percent_in_10km_current_year, na.rm = T), digits = 1)}\) to \(\Sexpr{round(100 * max(A3_South$Forest_percent_in_10km_current_year, na.rm = T), digits = 1)}\) (\textit{resp.} \(\Sexpr{round(100 * min(A3_South$Forest_percent_in_1km_current_year, na.rm = T), digits = 1)}\) to \(\Sexpr{round(100 * max(A3_South$Forest_percent_in_1km_current_year, na.rm = T), digits = 1)}\)), with a mean of \(\Sexpr{round(100 * mean(A3_South$Forest_percent_in_10km_current_year, na.rm = T), digits = 1)}\) $\%$ (\textit{resp.} \(\Sexpr{round(100 * mean(A3_South$Forest_percent_in_1km_current_year, na.rm = T), digits = 1)}\)) and a median of \(\Sexpr{round(100 * median(A3_South$Forest_percent_in_10km_current_year, na.rm = T), digits = 1)}\) $\%$ (\textit{resp.} \(\Sexpr{round(100 * median(A3_South$Forest_percent_in_1km_current_year, na.rm = T), digits = 1)}\)). & \(\Sexpr{round(100*sum(is.na(A3_South$Forest_percent_in_10km_current_year))/nrow(A3_South),digits = 1)}\) $\%$ \\
+&& \\
+Forest change & Absolute percent forest change within 10 km (\textit{resp.} 1 km), in previous 2 years. Ranges from  \(\Sexpr{round(100 * min(A3_South$Forest_percent_change_in_10km_previous_2_year, na.rm = T), digits = 1)}\) to \(\Sexpr{round(100 * max(A3_South$Forest_percent_change_in_10km_previous_2_year, na.rm = T), digits = 1)}\) (\textit{resp.}  \(\Sexpr{round(100 * min(A3_South$Forest_percent_change_in_1km_previous_2_year, na.rm = T), digits = 1)}\) to \(\Sexpr{round(100 * max(A3_South$Forest_percent_change_in_1km_previous_2_year, na.rm = T), digits = 1)}\)), with a mean of \(\Sexpr{round(100 * mean(A3_South$Forest_percent_change_in_10km_previous_2_year, na.rm = T), digits = 1)}\) $\%$ (\textit{resp.} \(\Sexpr{round(100 * mean(A3_South$Forest_percent_change_in_1km_previous_2_year, na.rm = T), digits = 1)}\)) and a median of \(\Sexpr{round(100 * median(A3_South$Forest_percent_change_in_10km_previous_2_year, na.rm = T), digits = 1)}\) $\%$ (\textit{resp.} \(\Sexpr{round(100 * median(A3_South$Forest_percent_change_in_1km_previous_2_year, na.rm = T), digits = 1)}\)). Available for previous 5 years. & \(\Sexpr{round(100*sum(is.na(A3_South$Forest_percent_change_in_10km_previous_2_year))/nrow(A3_South), digits = 1)}\) $\%$ \\
+&& \\ \hline
+
+\end{tabular}
+\caption{Basic description of environmental variables in dataset.}
+\label{table:Table_Basic_Description_Environmental}
+\end{center}
+\end{table}
+
+\newpage
+
+\subsection{Descriptive summary}
+\subsubsection{A3 variables}
+
+% A3 variables pie charts
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig3, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+pieDataGender <- (A3_South
+                  %>% filter(!is.na(Is_Male)) # Remove NA, messes up echo chunk option to insert figure
+                  %>% group_by(Is_Male)
+                  %>% count(Is_Male)
+                  %>% ungroup()
+                  %>% mutate(Gender = as.character(Is_Male),
+                             Gender = replace(Gender, Gender == "No", "Female"),
+                             Gender = replace(Gender, Gender == "Yes", "Male"),
+                             Gender = as.factor(Gender),
+                             Total = sum(n),
+                             Percent = 100* n / Total)
+                  %>% arrange(desc(Gender)) # Sort so that order and coordinates align
+                  %>% ggplot(aes(x = "", y = Percent, fill = Gender)) 
+                  + geom_bar(width = 1, stat = "identity")
+                  + coord_polar("y", start=0) # Transforms barplot into pie chart
+                  + blank_theme #Theme created for plot in Descriptive_Statistics.R
+                  + theme(axis.text.x = element_blank()) 
+                  + geom_text(aes(x = 1, y = Percent/2 + c(0, cumsum(Percent)[-length(Percent)]), # x controls positions inside the pie
+                                  label = percent(Percent/100)),
+                              size = 3)
+                  )
+
+
+pieDataAgeCategory <- (A3_South
+                       %>% filter(!is.na(Age_category)) # Remove NA, messes up echo chunk option to insert figure
+                       %>% group_by(Age_category)
+                       %>% count(Age_category)
+                       %>% ungroup()
+                       %>% mutate(Total = sum(n),
+                                  Percent = 100 * n / Total) 
+                       %>% arrange(desc(Age_category)) # Sort so that order and coordinates align
+                       %>% ggplot(aes(x = "", y = Percent, fill = Age_category)) 
+                       + geom_bar(width = 1, stat = "identity")
+                       + scale_fill_discrete(name = "Age (y)")
+                       + coord_polar("y", start=0) # Transforms barplot into pie chart
+                       + blank_theme #Theme created for plot in Descriptive_Statistics.R
+                       + theme(axis.text.x = element_blank()) 
+                       + geom_text(aes(x = 1.25, y = Percent/2 + c(0, cumsum(Percent)[-length(Percent)]), # x controls positions inside the pie
+                                       label = percent(Percent/100)),
+                                   size = 3)
+                       )
+
+pieDataOccupation <- (A3_South
+                      %>% filter(!is.na(Occupation)) # Remove NA, messes up echo chunk option to insert figure
+                      %>% group_by(Occupation)
+                      %>% count(Occupation)
+                      %>% ungroup()
+                      %>% mutate(Total = sum(n),
+                                 Percent = 100* n / Total) 
+                      %>% arrange(desc(Occupation)) # Sort so that order and coordinates align
+                      %>% ggplot(aes(x = "", y = Percent, fill = Occupation)) 
+                      + geom_bar(width = 1, stat = "identity")
+                      + coord_polar("y", start=0) # Transforms barplot into pie chart
+                      + blank_theme #Theme created for plot in Descriptive_Statistics.R
+                      + theme(axis.text.x = element_blank()) 
+                      + geom_text(aes(x = 1.25, y = Percent/2 + c(0, cumsum(Percent)[-length(Percent)]), # x controls positions inside the pie
+                                      label = percent(Percent/100)),
+                                  size = 3)
+                      )
+
+pieDataTreatment <- (A3_South
+                     %>% filter(!is.na(Treatment)) # Remove NA, messes up echo chunk option to insert figure
+                     %>% group_by(Treatment)
+                     %>% count(Treatment)
+                     %>% ungroup()
+                     %>% mutate(Total = sum(n),
+                                Percent = 100* n / Total) 
+                     %>% arrange(desc(Treatment)) # Sort so that order and coordinates align
+                     %>% ggplot(aes(x = "", y = Percent, fill = Treatment)) 
+                     + geom_bar(width = 1, stat = "identity")
+                     + scale_fill_discrete(labels = c("Coartem\nalone", "Coartem\nand other", "None", "Other"))
+                     + coord_polar("y", start=0) # Transforms barplot into pie chart
+                     + blank_theme #Theme created for plot in Descriptive_Statistics.R
+                     + theme(axis.text.x = element_blank()) 
+                     + geom_text(aes(x = 1.25, y = Percent/2 + c(0, cumsum(Percent)[-length(Percent)]), # x controls positions inside the pie
+                                     label = percent(Percent/100)),
+                                 size = 3)
+                     )
+
+
+pieDataRDT_result <- (A3_South
+                      %>% filter(!is.na(RDT_result)) # Remove NA, messes up echo chunk option to insert figure
+                      %>% group_by(RDT_result)
+                      %>% count(RDT_result)
+                      %>% ungroup()
+                      %>% mutate(Total = sum(n),
+                                 Percent = 100* n / Total) 
+                      %>% arrange(desc(RDT_result)) # Sort so that order and coordinates align
+                      %>% ggplot(aes(x = "", y = Percent, fill = RDT_result)) 
+                      + geom_bar(width = 1, stat = "identity")
+                      + scale_fill_discrete(name = "RDT")
+                      + coord_polar("y", start=0) # Transforms barplot into pie chart
+                      + blank_theme #Theme created for plot in Descriptive_Statistics.R
+                      + theme(axis.text.x = element_blank()) 
+                      + geom_text(aes(x = 1.25, y = Percent/2 + c(0, cumsum(Percent)[-length(Percent)]), # x controls positions inside the pie
+                                      label = percent(Percent/100)),
+                                  size = 3)
+                      )
+
+pieDataMicroscopy <- (A3_South
+                      %>% filter(!is.na(Microscopy_result)) # Remove NA, messes up echo chunk option to insert figure
+                      %>% group_by(Microscopy_result)
+                      %>% count(Microscopy_result)
+                      %>% ungroup()
+                      %>% mutate(Total = sum(n),
+                                 Percent = 100* n / Total) 
+                      %>% arrange(desc(Microscopy_result)) # Sort so that order and coordinates align
+                      %>% ggplot(aes(x = "", y = Percent, fill = Microscopy_result)) 
+                      + geom_bar(width = 1, stat = "identity")
+                      + scale_fill_discrete(name = "Microscopy")
+                      + coord_polar("y", start=0) # Transforms barplot into pie chart
+                      + blank_theme #Theme created for plot in Descriptive_Statistics.R
+                      + theme(axis.text.x = element_blank()) 
+                      + geom_text(aes(x = 1.25, y = Percent/2 + c(0, cumsum(Percent)[-length(Percent)]), # x controls positions inside the pie
+                                      label = percent(Percent/100)),
+                                  size = 3)
+                      )
+
+ggarrange(pieDataOccupation, pieDataAgeCategory, pieDataGender, pieDataTreatment, pieDataRDT_result, pieDataMicroscopy, ncol = 2, nrow = 3)
+@
+\includegraphics[width=0.9\textwidth]{fig3-1}
+\end{center}
+\caption{Pie charts of A3 variables.}
+\label{fig:Pie_Chart_A3}
+\end{figure}
+
+\newpage
+\subsubsection{Environmental variables}
+% Environmental variables histograms
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig4, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+axis.text.size <- 7
+axis.title.size <- 9
+histDataAltitude <- (A3_South
+                     %>% filter(!is.na(Altitude)) # Remove NA, messes up echo chunk option to insert figure
+                     %>% ggplot(aes(x=Altitude)) + geom_histogram(binwidth = 10)
+                     + scale_x_continuous(name = "Altitude (m)")
+                     + scale_y_continuous(name = "")
+                     + theme(axis.text = element_text(size = axis.text.size),
+                             axis.title = element_text(size = axis.title.size))
+                     )
+
+histDataPopulation2015 <- (A3_South
+                           %>% filter(!is.na(Population_2015)) # Remove NA, messes up echo chunk option to insert figure
+                           %>% ggplot(aes(x=Population_2015)) + geom_histogram(binwidth = 10)
+                           + scale_x_continuous(name = "2015 Population")
+                           + scale_y_continuous(name = "")
+                           + theme(axis.text = element_text(size = axis.text.size),
+                                   axis.title = element_text(size = axis.title.size))
+                           )
+
+histDataTempAnnual <- (A3_South
+                       %>% filter(!is.na(Temperature_Annual_Mean)) # Remove NA, messes up echo chunk option to insert figure
+                       %>% ggplot(aes(x=Temperature_Annual_Mean)) + geom_histogram(binwidth = 0.1)
+                       + scale_x_continuous(name = "Mean annual temperature (Celsius)")
+                       + scale_y_continuous(name = "")
+                       + theme(axis.text = element_text(size = axis.text.size),
+                               axis.title = element_text(size = axis.title.size))
+                       )
+
+histDataTempSeasonality <- (A3_South
+                            %>% filter(!is.na(Temperature_Seasonality)) # Remove NA, messes up echo chunk option to insert figure
+                            %>% ggplot(aes(x=Temperature_Seasonality)) + geom_histogram(binwidth = 0.01)
+                            + scale_x_continuous(name = "Temperature seasonality (SD in Celsius)")
+                            + scale_y_continuous(name = "")
+                            + theme(axis.text = element_text(size = axis.text.size),
+                                    axis.title = element_text(size = axis.title.size))
+                            )
+
+histDataPrecAnnual <- (A3_South
+                       %>% filter(!is.na(Precipitation_Annual)) # Remove NA, messes up echo chunk option to insert figure
+                       %>% ggplot(aes(x=Precipitation_Annual)) + geom_histogram(binwidth = 10)
+                       + scale_x_continuous(name = "Total annual precipitation (mm)")
+                       + scale_y_continuous(name = "")
+                       + theme(axis.text = element_text(size = axis.text.size),
+                               axis.title = element_text(size = axis.title.size))
+                       )
+
+histDataPrecSeasonality <- (A3_South
+                            %>% filter(!is.na(Precipitation_Seasonality)) # Remove NA, messes up echo chunk option to insert figure
+                            %>% ggplot(aes(x=Precipitation_Seasonality)) + geom_histogram(binwidth = 1)
+                            + scale_x_continuous(name = "Precipitation seasonality (Coefficient of variation)")
+                            + scale_y_continuous(name = "")
+                            + theme(axis.text = element_text(size = axis.text.size),
+                                    axis.title = element_text(size = axis.title.size))
+                            )
+
+ggarrange(histDataAltitude,
+          histDataPopulation2015,
+          histDataTempAnnual,
+          histDataTempSeasonality,
+          histDataPrecAnnual,
+          histDataPrecSeasonality,
+          ncol = 2, nrow = 3)
+@
+\includegraphics[width=0.9\textwidth]{fig4-1}
+\end{center}
+\caption{Histogram of environmental covariates at A3 villages.}
+\label{fig:Histogram_Environmental_Covariates}
+\end{figure}
+
+\newpage
+\subsubsection{Forest variables}
+% Forest variables histograms
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig5, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+axis.text.size <- 7
+axis.title.size <- 9
+histDataForest1km <- (A3_South
+                      %>% filter(!is.na(Forest_percent_in_1km_current_year)) # Remove NA, messes up echo chunk option to insert figure
+                      %>% ggplot(aes(x=100*Forest_percent_in_1km_current_year)) + geom_histogram(binwidth = 5)
+                      + scale_x_continuous(name = "Percent forest within 1 km (%)")
+                      + scale_y_continuous(name = "")
+                      + theme(axis.text = element_text(size = axis.text.size),
+                              axis.title = element_text(size = axis.title.size))
+                      )
+
+histDataForest10km <- (A3_South
+                       %>% filter(!is.na(Forest_percent_in_10km_current_year)) # Remove NA, messes up echo chunk option to insert figure
+                       %>% ggplot(aes(x=100*Forest_percent_in_10km_current_year)) + geom_histogram(binwidth = 5)
+                       + scale_x_continuous(name = "Percent forest within 10 km (%)")
+                       + scale_y_continuous(name = "")
+                       + theme(axis.text = element_text(size = axis.text.size),
+                               axis.title = element_text(size = axis.title.size))
+                       )
+
+histDataForestChange1km2year <- (A3_South
+                                 %>% filter(!is.na(Forest_percent_change_in_1km_previous_2_year)) # Remove NA, messes up echo chunk option to insert figure
+                                 %>% ggplot(aes(x=100*Forest_percent_change_in_1km_previous_2_year)) + geom_histogram(binwidth = 1)
+                                 + scale_x_continuous(name = "Absolute change in forest % within 1 km \nin previous 2 years")
+                                 + scale_y_continuous(name = "")
+                                 + theme(axis.text = element_text(size = axis.text.size),
+                                         axis.title = element_text(size = axis.title.size))
+                                 )
+
+histDataForestChange10km2year <- (A3_South
+                                  %>% filter(!is.na(Forest_percent_change_in_10km_previous_2_year)) # Remove NA, messes up echo chunk option to insert figure
+                                  %>% ggplot(aes(x=100*Forest_percent_change_in_10km_previous_2_year)) + geom_histogram(binwidth = 1)
+                                  + scale_x_continuous(name = "Absolute change in forest % within 10 km \nin previous 2 years")
+                                  + scale_y_continuous(name = "")
+                                  + theme(axis.text = element_text(size = axis.text.size),
+                                          axis.title = element_text(size = axis.title.size))
+                                  )
+
+histDataForestChange1km5year <- (A3_South
+                                 %>% filter(!is.na(Forest_percent_change_in_1km_previous_5_year)) # Remove NA, messes up echo chunk option to insert figure
+                                 %>% ggplot(aes(x=100*Forest_percent_change_in_1km_previous_5_year)) + geom_histogram(binwidth = 1)
+                                 + scale_x_continuous(name = "Absolute change in forest % within 1 km \nin previous 5 years")
+                                 + scale_y_continuous(name = "")
+                                 + theme(axis.text = element_text(size = axis.text.size),
+                                         axis.title = element_text(size = axis.title.size))
+                                 )
+
+histDataForestChange10km5year <- (A3_South
+                                  %>% filter(!is.na(Forest_percent_change_in_10km_previous_5_year)) # Remove NA, messes up echo chunk option to insert figure
+                                  %>% ggplot(aes(x=100*Forest_percent_change_in_10km_previous_5_year)) + geom_histogram(binwidth = 1)
+                                  + scale_x_continuous(name = "Absolute change in forest % within 10 km \nin previous 5 years")
+                                  + scale_y_continuous(name = "")
+                                  + theme(axis.text = element_text(size = axis.text.size),
+                                          axis.title = element_text(size = axis.title.size))
+                                  )
+
+ggarrange(histDataForest1km,
+          histDataForest10km,
+          histDataForestChange1km2year,
+          histDataForestChange10km2year,
+          histDataForestChange1km5year,
+          histDataForestChange10km5year,
+          ncol = 2, nrow = 3)
+@
+\includegraphics[width=0.9\textwidth]{fig5-1}
+\end{center}
+\caption{Histogram of forest covariates at A3 villages.}
+\label{fig:Histogram_Forest_Covariates}
+\end{figure}
+
+\newpage
+
+\subsection{Variables' correlations}
+
+\begin{figure}[hbp]
+\begin{center}
+\includegraphics[width=0.9\textwidth]{fig6-manual}
+\end{center}
+\caption{Correlogram of variables in dataset.}
+\label{fig:Correlogram_Covariates}
+\end{figure}
+
+\newpage
+\subsection{Unadjusted associations between forest and malaria}
+\subsubsection{Plasmodium Falciparum}
+
+%%%%%%%%%%% PF
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig7, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+smoothPfRDT_Forest1km <- (A3_South
+                          %>% mutate(Pf_RDT = ifelse((RDT_result == "Pf" | RDT_result == "Pf, Pv"), 1, 0))
+                          %>% ggplot(aes(x = 100*Forest_percent_in_1km_current_year, y = Pf_RDT))
+                          + scale_y_continuous(name = "")
+                          + scale_x_continuous(name = "Forest % within 1 km")
+                          + theme(axis.title = element_text(size = 10))
+                          + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                          )
+
+smoothPfRDT_Forest10km <- (A3_South
+                           %>% mutate(Pf_RDT = ifelse((RDT_result == "Pf" | RDT_result == "Pf, Pv"), 1, 0))
+                           %>% ggplot(aes(x = 100*Forest_percent_in_10km_current_year, y = Pf_RDT))
+                           + scale_y_continuous(name = "")
+                           + scale_x_continuous(name = "Forest % within 10 km")
+                           + theme(axis.title = element_text(size = 10))
+                           + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                           )
+
+smoothPfRDT_ForestChange2y1km <- (A3_South
+                                  %>% mutate(Pf_RDT = ifelse((RDT_result == "Pf" | RDT_result == "Pf, Pv"), 1, 0))
+                                  %>% ggplot(aes(x = 100*Forest_percent_change_in_1km_previous_2_year, y = Pf_RDT))
+                                  + scale_y_continuous(name = "")
+                                  + scale_x_continuous(name = "Forest % change within 1 km\nin previous 2 years")
+                                  + theme(axis.title = element_text(size = 10))
+                                  + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                  )
+
+smoothPfRDT_ForestChange2y10km <- (A3_South
+                                   %>% mutate(Pf_RDT = ifelse((RDT_result == "Pf" | RDT_result == "Pf, Pv"), 1, 0))
+                                   %>% ggplot(aes(x = 100*Forest_percent_change_in_10km_previous_2_year, y = Pf_RDT))
+                                   + scale_y_continuous(name = "")
+                                   + scale_x_continuous(name = "Forest % change within 10 km\nin previous 2 years")
+                                   + theme(axis.title = element_text(size = 10))
+                                   + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                   )
+
+smoothPfRDT_ForestChange5y1km <- (A3_South
+                                  %>% mutate(Pf_RDT = ifelse((RDT_result == "Pf" | RDT_result == "Pf, Pv"), 1, 0))
+                                  %>% ggplot(aes(x = 100*Forest_percent_change_in_1km_previous_5_year, y = Pf_RDT))
+                                  + scale_y_continuous(name = "")
+                                  + scale_x_continuous(name = "Forest % change within 1 km\nin previous 5 years")
+                                  + theme(axis.title = element_text(size = 10))
+                                  + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                  )
+
+smoothPfRDT_ForestChange5y10km <- (A3_South
+                                   %>% mutate(Pf_RDT = ifelse((RDT_result == "Pf" | RDT_result == "Pf, Pv"), 1, 0))
+                                   %>% ggplot(aes(x = 100*Forest_percent_change_in_10km_previous_5_year, y = Pf_RDT))
+                                   + scale_y_continuous(name = "")
+                                   + scale_x_continuous(name = "Forest % change within 10 km\nin previous 5 years")
+                                   + theme(axis.title = element_text(size = 10))
+                                   + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                   )
+
+figure <- ggarrange(smoothPfRDT_Forest1km, smoothPfRDT_Forest10km, smoothPfRDT_ForestChange2y1km, smoothPfRDT_ForestChange2y10km, smoothPfRDT_ForestChange5y1km, smoothPfRDT_ForestChange5y10km, ncol = 2, nrow = 3)
+
+annotate_figure(figure, top = text_grob("Probability of Pf RDT-positivity", face = "bold"))
+@
+\includegraphics[width=0.9\textwidth]{fig7-1}
+\end{center}
+\caption{GAM smooth plots of association between forest and Pf RDT positivity.}
+\label{fig:Smooth_Pf_RDT}
+\end{figure}
+
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig8, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+smoothPfMicroscopy_Forest1km <- (A3_South
+                                 %>% mutate(Pf_Microscopy = ifelse((Microscopy_result == "Pf" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                 %>% ggplot(aes(x = Forest_percent_in_1km_current_year, y = Pf_Microscopy))
+                                 + scale_y_continuous(name = "")
+                                 + scale_x_continuous(name = "Forest % within 1 km")
+                                 + theme(axis.title = element_text(size = 10))
+                                 + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                       )
+
+smoothPfMicroscopy_Forest10km <- (A3_South
+                                  %>% mutate(Pf_Microscopy = ifelse((Microscopy_result == "Pf" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                  %>% ggplot(aes(x = Forest_percent_in_10km_current_year, y = Pf_Microscopy))
+                                  + scale_y_continuous(name = "")
+                                  + scale_x_continuous(name = "Forest % within 10 km")
+                                  + theme(axis.title = element_text(size = 10))
+                                  + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                  )
+
+smoothPfMicroscopy_ForestChange2y1km <- (A3_South
+                                         %>% mutate(Pf_Microscopy = ifelse((Microscopy_result == "Pf" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                         %>% ggplot(aes(x = Forest_percent_change_in_1km_previous_2_year, y = Pf_Microscopy))
+                                         + scale_y_continuous(name = "")
+                                         + scale_x_continuous(name = "Forest % change within 1 km\nin previous 2 years")
+                                         + theme(axis.title = element_text(size = 10))
+                                         + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                         )
+ 
+smoothPfMicroscopy_ForestChange2y10km <- (A3_South
+                                          %>% mutate(Pf_Microscopy = ifelse((Microscopy_result == "Pf" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                          %>% ggplot(aes(x = Forest_percent_change_in_10km_previous_2_year, y = Pf_Microscopy))
+                                          + scale_y_continuous(name = "")
+                                          + scale_x_continuous(name = "Forest % change within 10 km\nin previous 2 years")
+                                          + theme(axis.title = element_text(size = 10))
+                                          + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                          )
+
+smoothPfMicroscopy_ForestChange5y1km <- (A3_South
+                                         %>% mutate(Pf_Microscopy = ifelse((Microscopy_result == "Pf" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                         %>% ggplot(aes(x = Forest_percent_change_in_1km_previous_5_year, y = Pf_Microscopy))
+                                         + scale_y_continuous(name = "")
+                                         + scale_x_continuous(name = "Forest % change within 1 km\nin previous 5 years")
+                                         + theme(axis.title = element_text(size = 10))
+                                         + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                         )
+
+smoothPfMicroscopy_ForestChange5y10km <- (A3_South
+                                          %>% mutate(Pf_Microscopy = ifelse((Microscopy_result == "Pf" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                          %>% ggplot(aes(x = Forest_percent_change_in_10km_previous_5_year, y = Pf_Microscopy))
+                                          + scale_y_continuous(name = "")
+                                          + scale_x_continuous(name = "Forest % change within 10 km\nin previous 5 years")
+                                          + theme(axis.title = element_text(size = 10))
+                                          + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                          )
+
+figure <- ggarrange(smoothPfMicroscopy_Forest1km, smoothPfMicroscopy_Forest10km, smoothPfMicroscopy_ForestChange2y1km, smoothPfMicroscopy_ForestChange2y10km, smoothPfMicroscopy_ForestChange5y1km, smoothPfMicroscopy_ForestChange5y10km, ncol = 2, nrow = 3)
+
+annotate_figure(figure, top = text_grob("Probability of Pf Microscopy-positivity", face = "bold"))
+@
+\includegraphics[width=0.9\textwidth]{fig8-1}
+\end{center}
+\caption{GAM smooth plots of association between forest and Pf Microscopy positivity.}
+\label{fig:Smooth_Pf_Microscopy}
+\end{figure}
+
+\newpage
+
+\subsubsection{Plasmodium Vivax}
+
+%%%%%%%%%%% PV
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig9, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+smoothPvRDT_Forest1km <- (A3_South
+                          %>% mutate(Pv_RDT = ifelse((RDT_result == "Pv" | RDT_result == "Pf, Pv"), 1, 0))
+                          %>% ggplot(aes(x = 100*Forest_percent_in_1km_current_year, y = Pv_RDT))
+                          + scale_y_continuous(name = "")
+                          + scale_x_continuous(name = "Forest % within 1 km")
+                          + theme(axis.title = element_text(size = 10))
+                          + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                          )
+
+smoothPvRDT_Forest10km <- (A3_South
+                           %>% mutate(Pv_RDT = ifelse((RDT_result == "Pv" | RDT_result == "Pf, Pv"), 1, 0))
+                           %>% ggplot(aes(x = 100*Forest_percent_in_10km_current_year, y = Pv_RDT))
+                           + scale_y_continuous(name = "")
+                           + scale_x_continuous(name = "Forest % within 10 km")
+                           + theme(axis.title = element_text(size = 10))
+                           + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                           )
+
+smoothPvRDT_ForestChange2y1km <- (A3_South
+                                  %>% mutate(Pv_RDT = ifelse((RDT_result == "Pv" | RDT_result == "Pf, Pv"), 1, 0))
+                                  %>% ggplot(aes(x = 100*Forest_percent_change_in_1km_previous_2_year, y = Pv_RDT))
+                                  + scale_y_continuous(name = "")
+                                  + scale_x_continuous(name = "Forest % change within 1 km\nin previous 2 years")
+                                  + theme(axis.title = element_text(size = 10))
+                                  + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                  )
+
+smoothPvRDT_ForestChange2y10km <- (A3_South
+                                   %>% mutate(Pv_RDT = ifelse((RDT_result == "Pv" | RDT_result == "Pf, Pv"), 1, 0))
+                                   %>% ggplot(aes(x = 100*Forest_percent_change_in_10km_previous_2_year, y = Pv_RDT))
+                                   + scale_y_continuous(name = "")
+                                   + scale_x_continuous(name = "Forest % change within 10 km\nin previous 2 years")
+                                   + theme(axis.title = element_text(size = 10))
+                                   + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                   )
+
+smoothPvRDT_ForestChange5y1km <- (A3_South
+                                  %>% mutate(Pv_RDT = ifelse((RDT_result == "Pv" | RDT_result == "Pf, Pv"), 1, 0))
+                                  %>% ggplot(aes(x = 100*Forest_percent_change_in_1km_previous_5_year, y = Pv_RDT))
+                                  + scale_y_continuous(name = "")
+                                  + scale_x_continuous(name = "Forest % change within 1 km\nin previous 5 years")
+                                  + theme(axis.title = element_text(size = 10))
+                                  + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                  )
+
+smoothPvRDT_ForestChange5y10km <- (A3_South
+                                   %>% mutate(Pv_RDT = ifelse((RDT_result == "Pv" | RDT_result == "Pf, Pv"), 1, 0))
+                                   %>% ggplot(aes(x = 100*Forest_percent_change_in_10km_previous_5_year, y = Pv_RDT))
+                                   + scale_y_continuous(name = "")
+                                   + scale_x_continuous(name = "Forest % change within 10 km\nin previous 5 years")
+                                   + theme(axis.title = element_text(size = 10))
+                                   + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                   )
+
+figure <- ggarrange(smoothPvRDT_Forest1km, smoothPvRDT_Forest10km, smoothPvRDT_ForestChange2y1km, smoothPvRDT_ForestChange2y10km, smoothPvRDT_ForestChange5y1km, smoothPvRDT_ForestChange5y10km, ncol = 2, nrow = 3)
+
+annotate_figure(figure, top = text_grob("Probability of Pv RDT positivity", face = "bold"))
+@
+\includegraphics[width=0.9\textwidth]{fig9-1}
+\end{center}
+\caption{GAM smooth plots of association between forest and Pv RDT-positivity.}
+\label{fig:Smooth_Pv_RDT}
+\end{figure}
+
+
+\begin{figure}[hbp]
+\begin{center}
+<<label=fig10, echo=FALSE, tidy=TRUE, results='asis', message=FALSE, cache=TRUE, include=FALSE>>=
+smoothPvMicroscopy_Forest1km <- (A3_South
+                                 %>% mutate(Pv_Microscopy = ifelse((Microscopy_result == "Pv" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                 %>% ggplot(aes(x = Forest_percent_in_1km_current_year, y = Pv_Microscopy))
+                                 + scale_y_continuous(name = "")
+                                 + scale_x_continuous(name = "Forest % within 1 km")
+                                 + theme(axis.title = element_text(size = 10))
+                                 + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                       )
+
+smoothPvMicroscopy_Forest10km <- (A3_South
+                                  %>% mutate(Pv_Microscopy = ifelse((Microscopy_result == "Pv" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                  %>% ggplot(aes(x = Forest_percent_in_10km_current_year, y = Pv_Microscopy))
+                                  + scale_y_continuous(name = "")
+                                  + scale_x_continuous(name = "Forest % within 10 km")
+                                  + theme(axis.title = element_text(size = 10))
+                                  + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                  )
+
+smoothPvMicroscopy_ForestChange2y1km <- (A3_South
+                                         %>% mutate(Pv_Microscopy = ifelse((Microscopy_result == "Pv" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                         %>% ggplot(aes(x = Forest_percent_change_in_1km_previous_2_year, y = Pv_Microscopy))
+                                         + scale_y_continuous(name = "")
+                                         + scale_x_continuous(name = "Forest % change within 1 km\nin previous 2 years")
+                                         + theme(axis.title = element_text(size = 10))
+                                         + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                         )
+ 
+smoothPvMicroscopy_ForestChange2y10km <- (A3_South
+                                          %>% mutate(Pv_Microscopy = ifelse((Microscopy_result == "Pv" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                          %>% ggplot(aes(x = Forest_percent_change_in_10km_previous_2_year, y = Pv_Microscopy))
+                                          + scale_y_continuous(name = "")
+                                          + scale_x_continuous(name = "Forest % change within 10 km\nin previous 2 years")
+                                          + theme(axis.title = element_text(size = 10))
+                                          + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                          )
+
+smoothPvMicroscopy_ForestChange5y1km <- (A3_South
+                                         %>% mutate(Pv_Microscopy = ifelse((Microscopy_result == "Pv" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                         %>% ggplot(aes(x = Forest_percent_change_in_1km_previous_5_year, y = Pv_Microscopy))
+                                         + scale_y_continuous(name = "")
+                                         + scale_x_continuous(name = "Forest % change within 1 km\nin previous 5 years")
+                                         + theme(axis.title = element_text(size = 10))
+                                         + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                         )
+
+smoothPvMicroscopy_ForestChange5y10km <- (A3_South
+                                          %>% mutate(Pv_Microscopy = ifelse((Microscopy_result == "Pv" | Microscopy_result == "Pf, Pv"), 1, 0))
+                                          %>% ggplot(aes(x = Forest_percent_change_in_10km_previous_5_year, y = Pv_Microscopy))
+                                          + scale_y_continuous(name = "")
+                                          + scale_x_continuous(name = "Forest % change within 10 km\nin previous 5 years")
+                                          + theme(axis.title = element_text(size = 10))
+                                          + stat_smooth(method = "gam", formula = y ~ s(x, k= 10), size = 1)
+                                          )
+
+figure <- ggarrange(smoothPvMicroscopy_Forest1km, smoothPvMicroscopy_Forest10km, smoothPvMicroscopy_ForestChange2y1km, smoothPvMicroscopy_ForestChange2y10km, smoothPvMicroscopy_ForestChange5y1km, smoothPvMicroscopy_ForestChange5y10km, ncol = 2, nrow = 3)
+
+annotate_figure(figure, top = text_grob("Probability of Pv Microscopy positivity", face = "bold"))
+@
+\includegraphics[width=0.9\textwidth]{fig10-1}
+\end{center}
+\caption{GAM smooth plots of association between forest and Pv Microscopy positivity.}
+\label{fig:Smooth_Pv_Microscopy}
+\end{figure}
+
+\end{document}
